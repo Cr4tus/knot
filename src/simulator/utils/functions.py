@@ -1,6 +1,7 @@
 import logging
-import sys
+import shutil
 import yaml
+import sys
 
 from box import Box
 from pathlib import Path
@@ -8,7 +9,7 @@ from typing import Optional
 from datetime import datetime
 
 
-def get_project_root() -> Path:
+def get_project_root_dir_path() -> Path:
     """
     Finds the project root by searching upwards for a marker file.
     Raises FileNotFoundError if no root marker is found.
@@ -77,3 +78,22 @@ def validate_date_interval(start_date: str, end_date: str, date_format: str):
 
     if end > datetime.now():
         raise ValueError(f"End date ({end_date}) cannot be in the future.")
+
+
+def setup_workspace(configuration: Box) -> Path:
+    """
+    Prepares the output directory based on the configuration.
+    """
+
+    output_directory_path = \
+        get_project_root_dir_path() / configuration.root_directory
+
+    if configuration.clear_on_start and output_directory_path.exists():
+        for item in output_directory_path.iterdir():
+            if item.is_dir():
+                shutil.rmtree(item)
+            else:
+                item.unlink()
+    
+    output_directory_path.mkdir(parents=True, exist_ok=True)
+    return output_directory_path

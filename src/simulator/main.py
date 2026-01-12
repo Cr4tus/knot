@@ -2,7 +2,12 @@ import sys
 
 from datetime import datetime, timedelta
 
-from simulator.utils.functions import get_project_root, load_config, configure_logger
+from simulator.utils.functions import (
+    load_config,
+    setup_workspace,
+    configure_logger,
+    get_project_root_dir_path,
+)
 from simulator.data.api import fetch_portfolio_data
 from simulator.engine import simulator_factory
 from simulator.utils.processor import PortfolioProcessor, StressTester
@@ -16,7 +21,7 @@ def main():
     logger = configure_logger(level="INFO")
 
     try:
-        project_root_path = get_project_root()
+        project_root_path = get_project_root_dir_path()
 
         # 2. Config Setup
         logger.info("Loading configurations...")
@@ -26,7 +31,7 @@ def main():
             fmt=config.project.logging.format
         )
 
-        output_directory = project_root_path / config.output.directory
+        output_directory = setup_workspace(config.output.workspace)
 
         # 3. Unified Data Acquisition
         # Fetch full history once to avoid multiple API calls.
@@ -53,10 +58,10 @@ def main():
 
         # 5. Simulations
         engine_to_results_map: dict[str, SimulationEngineResult] = dict()
-        for engine in config.simulation.active_engines:
-            logger.info(f"Running {engine} simulation...")
+        for engine_name in config.simulation.active_engines:
+            logger.info(f"Running {engine_name} simulation...")
 
-            simulation_engine = simulator_factory(engine, simulation_data, config)
+            simulation_engine = simulator_factory(engine_name, simulation_data, config)
             raw_paths = simulation_engine.run(
                 config.simulation.n_simulations, config.simulation.days_ahead)
 
@@ -69,10 +74,10 @@ def main():
             metrics = processor.calculate_risk_metrics(paths)
 
             # Generate engine-specific visuals
-            logger.info(f"Generating visual resources for {engine} simulation...")
+            logger.info(f"Generating visual resources for {engine_name} simulation...")
             visualizer = Visualizer(
-                directory=output_directory / engine,
-                config=config.output.visualizer,
+                directory=output_directory / engine_name,
+                assets_configurations=config.output.assets,
             )
 
             simulation_visual_filepath = \
@@ -86,7 +91,7 @@ def main():
                 )
 
             # Saving results for PDF generation
-            engine_to_results_map[engine] = SimulationEngineResult(
+            engine_to_results_map[engine_name] = SimulationEngineResult(
                 metrics=metrics,
                 simulation_visual_filepath=simulation_visual_filepath,
                 return_distribution_visual_filepath=return_distribution_visual_filepath,
@@ -108,7 +113,7 @@ def main():
         logger.info("Generating other visual resources...")
         visualizer = Visualizer(
             directory=output_directory,
-            config=config.output.visualizer
+            assets_configurations=config.output.assets
         )
 
         correlation_heatmap_visual_filepath = \
@@ -129,7 +134,7 @@ def main():
             )
 
         # 8. PDF Generation
-        if config.output.report.generate:
+        if config.output.report.enabled:
             logger.info("Generating PDF report...")
 
             reporter = RiskReporter(config)

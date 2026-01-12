@@ -9,8 +9,8 @@ from pathlib import Path
 
 
 class Visualizer:
-    def __init__(self, directory: Path, config: Box):
-        self.cfg = config
+    def __init__(self, directory: Path, assets_configurations: Box):
+        self.config = assets_configurations
         self.directory = directory
         self.directory.mkdir(parents=True, exist_ok=True)
 
@@ -46,8 +46,8 @@ class Visualizer:
         
         plt.title("Asset Correlation Matrix (Historical Data)")
         
-        path = self.directory / self.cfg.filenames.correlation_heatmap
-        plt.savefig(path, dpi=300, bbox_inches='tight')
+        path = self.directory / f'{self.config.registry.correlation}.{self.config.format}'
+        plt.savefig(path, dpi=self.config.dpi, bbox_inches='tight')
         plt.close()
 
         return path
@@ -73,8 +73,8 @@ class Visualizer:
         plt.ylabel("Value (Starting at 1.0)")
         plt.legend()
         
-        path = self.directory / self.cfg.filenames.simulation_paths
-        plt.savefig(path, dpi=300)
+        path = self.directory / f'{self.config.registry.paths}.{self.config.format}'
+        plt.savefig(path, dpi=self.config.dpi)
         plt.close()
 
         return path
@@ -94,8 +94,8 @@ class Visualizer:
         plt.ylabel("Probability")
         plt.legend()
         
-        path = self.directory / self.cfg.filenames.return_distribution
-        plt.savefig(path, dpi=300, bbox_inches='tight')
+        path = self.directory / f'{self.config.registry.distribution}.{self.config.format}'
+        plt.savefig(path, dpi=self.config.dpi, bbox_inches='tight')
         plt.close()
 
         return path
@@ -134,8 +134,8 @@ class Visualizer:
         plt.ylabel("Cumulative Growth (1.0 = Start)")
         plt.legend()
         
-        path = self.directory / self.cfg.filenames.portfolio_vs_benchmark
-        plt.savefig(path, dpi=300)
+        path = self.directory / f'{self.config.registry.benchmarking}.{self.config.format}'
+        plt.savefig(path, dpi=self.config.dpi)
         plt.close()
 
         return path
@@ -205,8 +205,8 @@ class Visualizer:
         plt.legend(title="Asset Allocation", frameon=True, bbox_to_anchor=(1.05, 1), loc='upper left')
         plt.tight_layout()
         
-        path = self.directory / self.cfg.filenames.stress_test
-        plt.savefig(path, dpi=300, bbox_inches='tight')
+        path = self.directory / f'{self.config.registry.stress}.{self.config.format}'
+        plt.savefig(path, dpi=self.config.dpi, bbox_inches='tight')
         plt.close()
 
         return path

@@ -26,6 +26,7 @@ dist/
 *.pdf
 *.csv
 exports/
+output/
 
 # --- OS Specific ---
 .DS_Store

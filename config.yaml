@@ -40,19 +40,23 @@ stress_tests:
     - name: "2020 COVID Crisis"
       start: "2020-02-19"
       end: "2020-03-23"
-    - name: "2020 COVID Crisis 2"
-      start: "2021-02-19"
-      end: "2022-03-23"
 
 output:
-  directory: "exports"
-  visualizer:
-    filenames:
-      correlation_heatmap: "correlation_heatmap.png"
-      portfolio_vs_benchmark: "portfolio_vs_benchmark.png"
-      return_distribution: "return_distribution.png"
-      simulation_paths: "simulation_paths.png"
-      stress_test: "stress_tests.png"
+  workspace:
+    root_directory: "output"
+    clear_on_start: true  # true or false
+    timestamp_subdirs: false  # true or false (not implemented yet :D)
+
+  assets:
+    format: "png"
+    dpi: 300
+    registry:
+      correlation: "correlation_matrix"
+      benchmarking: "performance_vs_benchmarks"
+      distribution: "return_probability_density"
+      paths: "stochastic_trajectories"
+      stress: "historical_stress_scenarios"
+
   report:
-    generate: true  # true or false
+    enabled: true  # true or false
     filename: "portfolio_risk_report.pdf"
