@@ -3,12 +3,15 @@ import seaborn as sns
 import pandas as pd
 import numpy as np
 from pathlib import Path
+from box import Box
 
 
 class Visualizer:
-    def __init__(self, export_dir: Path):
-        self.export_dir = export_dir
-        self.export_dir.mkdir(parents=True, exist_ok=True)
+    def __init__(self, directory: Path, config: Box):
+        self.cfg = config
+        self.directory = directory
+        self.directory.mkdir(parents=True, exist_ok=True)
+
         sns.set_theme(style="darkgrid")
     
 
@@ -41,7 +44,7 @@ class Visualizer:
         
         plt.title("Asset Correlation Matrix (Historical Data)")
         
-        path = self.export_dir / "correlation_heatmap.png"
+        path = self.directory / self.cfg.filenames.correlation_heatmap
         plt.savefig(path, dpi=300, bbox_inches='tight')
         plt.close()
 
@@ -68,7 +71,7 @@ class Visualizer:
         plt.ylabel("Value (Starting at 1.0)")
         plt.legend()
         
-        path = self.export_dir / "sim_paths.png"
+        path = self.directory / self.cfg.filenames.simulation_paths
         plt.savefig(path, dpi=300)
         plt.close()
 
@@ -89,7 +92,7 @@ class Visualizer:
         plt.ylabel("Probability")
         plt.legend()
         
-        path = self.export_dir / "return_dist.png"
+        path = self.directory / self.cfg.filenames.return_distribution
         plt.savefig(path, dpi=300, bbox_inches='tight')
         plt.close()
 
@@ -129,7 +132,7 @@ class Visualizer:
         plt.ylabel("Cumulative Growth (1.0 = Start)")
         plt.legend()
         
-        path = self.export_dir / "historical_vs_benchmark.png"
+        path = self.directory / self.cfg.filenames.portfolio_vs_benchmark
         plt.savefig(path, dpi=300)
         plt.close()
 
@@ -176,7 +179,7 @@ class Visualizer:
         plt.gca().invert_yaxis() # Portfolio at the top
         plt.grid(axis='x', linestyle='--', alpha=0.3)
         
-        path = self.export_dir / "stress_test.png"
+        path = self.directory / self.cfg.filenames.stress_test
         plt.savefig(path, dpi=300, bbox_inches='tight')
         plt.close()
 

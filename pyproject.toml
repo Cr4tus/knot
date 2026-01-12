@@ -8,11 +8,12 @@ dependencies = [
     "numpy",
     "pyyaml",
     "pandas",
+    "pydantic",
     "yfinance",
     "matplotlib",
     "python-box",
     "seaborn",
-    "fpdf2"
+    "fpdf2",
 ]
 
 [build-system]

@@ -7,6 +7,9 @@ from simulator.api import fetch_portfolio_data
 from simulator.engine import simulator_factory
 from simulator.processor import PortfolioProcessor, StressTester
 from simulator.visualizer import Visualizer
+from simulator.reporter import RiskReporter
+from simulator.data.simulation_engine_result import SimulationEngineResult
+
 
 def main():
     # 1. Initial Logger Setup
@@ -27,8 +30,9 @@ def main():
         data = fetch_portfolio_data(
             tickers=cfg.portfolio.stocks,
             benchmarks=cfg.portfolio.benchmarks,
-            start_date="2019-01-01",
-            end_date=cfg.dates.end
+            start_date=cfg.dates.extended,
+            end_date=cfg.dates.end,
+            date_format=cfg.dates.format
         )
         logger.info(f"Successfully retrieved {len(data)} days of data for {len(data.columns)} symbols.")
 
@@ -37,46 +41,105 @@ def main():
         simulation_assets_returns = simulation_data[cfg.portfolio.stocks].pct_change().dropna()
         simulation_portfolio_return = (simulation_assets_returns * cfg.portfolio.weights).sum(axis=1)
         simulation_benchmark_returns = simulation_data[cfg.portfolio.benchmarks].pct_change().dropna()
-
         target_date = (
             datetime.strptime(cfg.dates.end, cfg.dates.format)
             + timedelta(days=cfg.simulation.days_ahead)
         ).strftime(cfg.dates.format)
 
-        # 5. Simulation
-        logger.info(f"Running {cfg.simulation.type} simulation for {cfg.simulation.days_ahead} days...")
-        simulation_engine = simulator_factory(cfg.simulation.type, simulation_data, cfg)
-        raw_paths = simulation_engine.run(
-            n_simulations=cfg.simulation.n_simulations,
-            days=cfg.simulation.days_ahead
-        )
+        # 5. Simulations
+        engine_to_results_map: dict[str, SimulationEngineResult] = dict()
+        for engine_type in cfg.simulation.active:
+            # Actual simulation run
+            simulation_engine = simulator_factory(engine_type, simulation_data, cfg)
+            raw_paths = simulation_engine.run(cfg.simulation.n_simulations, cfg.simulation.days_ahead)
 
-        # 6. Quantitative Analysis
-        processor = PortfolioProcessor(
-            simulation_results=raw_paths,
-            ticker_names=cfg.portfolio.stocks,
-            weights=cfg.portfolio.weights,
-        )
+            processor = PortfolioProcessor(
+                simulation_results=raw_paths,
+                ticker_names=cfg.portfolio.stocks,
+                weights=cfg.portfolio.weights,
+            )
+            paths = processor.get_portfolio_paths()
+            metrics = processor.calculate_risk_metrics(paths)
 
-        portfolio_paths = processor.get_portfolio_paths()
-        metrics = processor.calculate_risk_metrics(portfolio_paths)
+            # Generate engine-specific visuals
+            logger.info(f"Generating visual resources for {engine_type} simulation...")
+            visualizer = Visualizer(
+                directory=project_root_path / cfg.output.directory / engine_type,
+                config=cfg.output.visualizer
+            )
+
+            simulation_visual_filepath = \
+                visualizer.plot_simulation_paths(portfolio_paths=paths)
+
+            return_distribution_visual_filepath = \
+                visualizer.plot_return_distribution(
+                    final_returns=paths[:, -1] - 1,
+                    var_95=metrics.var_95,
+                    target_date=target_date
+                )
+
+            # Saving results for PDF generation
+            engine_to_results_map[engine_type] = SimulationEngineResult(
+                metrics=metrics,
+                simulation_visual_filepath=simulation_visual_filepath,
+                return_distribution_visual_filepath=return_distribution_visual_filepath
+            )
 
         # 7. Stress Testing
         tester = StressTester(data, cfg.portfolio.weights, cfg.portfolio.stocks)
         portfolio_stress, bench_stress = tester.run_stress_tests(cfg.portfolio.benchmarks)
 
-        # 8. Visualization Suite
-        logger.info("Generating visual resources...")
-        viz = Visualizer(export_dir=project_root_path / cfg.output.export_dir)
+        # 8. Visualization
+        logger.info("Generating other visual resources...")
+        visualizer = Visualizer(
+            directory=project_root_path / cfg.output.directory,
+            config=cfg.output.visualizer
+        )
         
         # Core Risk Visuals
-        viz.plot_correlation_heatmap(simulation_data.pct_change().dropna())
-        viz.plot_simulation_paths(portfolio_paths)
-        viz.plot_return_distribution(portfolio_paths[:, -1] - 1, metrics['var_95'], target_date)
-        viz.plot_stress_test(portfolio_stress, bench_stress)
-        viz.plot_benchmark_comparison(simulation_portfolio_return, simulation_benchmark_returns)
+        correlation_heatmap_visual_filepath = \
+            visualizer.plot_correlation_heatmap(
+                data=simulation_data.pct_change().dropna()
+            )
+        
+        stress_test_visual_filepath = \
+            visualizer.plot_stress_test(
+                portfolio_results=portfolio_stress,
+                benchmark_results=bench_stress
+            )
+        
+        portfolio_vs_benchmark_visual_filepath = \
+            visualizer.plot_benchmark_comparison(
+                simulation_portfolio_return,
+                simulation_benchmark_returns
+            )
 
-        logger.info(f"Simulation workflow complete. Results exported to: {cfg.output.export_dir}")
+        logger.info(f"Simulation workflow complete. Results exported to: {cfg.output.directory}")
+
+        # 9. PDF Generation
+        if cfg.output.report.generate:
+            logger.info("Generating PDF report...")
+
+            reporter = RiskReporter(cfg)
+            reporter.add_title_page()
+            reporter.add_introduction(
+                extended_start_date=cfg.dates.extended,
+                start_date=cfg.dates.start,
+                end_date=cfg.dates.end,
+            )
+            reporter.add_correlation_heatmap_visual_and_simulations_comparison(
+                correlation_heatmap_visual_filepath=str(correlation_heatmap_visual_filepath),
+                engine_to_results_map=engine_to_results_map
+            )
+            reporter.add_pages_for_engines_results(
+                engine_to_results_map=engine_to_results_map
+            )
+            reporter.add_portfolio_vs_benchmarks_and_stress_test_visuals(
+                portfolio_vs_benchmarks_visual_filepath=str(portfolio_vs_benchmark_visual_filepath),
+                stress_test_visual_filepath=str(stress_test_visual_filepath),
+            )
+
+            reporter.output(str(project_root_path / cfg.output.report.filename))
 
     except Exception as e:
         logger.critical(f"Execution failed: {e}", exc_info=True)

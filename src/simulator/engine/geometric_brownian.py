@@ -6,13 +6,13 @@ from simulator.engine.base import BaseSimulator
 logger = logging.getLogger(__name__)
 
 
-class BootstrapSimulator(BaseSimulator):
+class GeometricBrownianSimulator(BaseSimulator):
     def run(self, n_simulations: int, days: int):
         """
         Runs simulation by sampling historical return days.
         """
 
-        logger.info(f"Starting Historical Bootstrap on {len(self.tickers)} assets.")
+        logger.info(f"Starting Historical Geometric Brownian Motion on {len(self.tickers)} assets.")
 
         returns = self.data[self.tickers].pct_change().dropna().values
         results = []

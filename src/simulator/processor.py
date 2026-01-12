@@ -2,6 +2,8 @@ import pandas as pd
 import numpy as np
 import logging
 
+from simulator.data.risk_metrics import RiskMetrics
+
 
 logger = logging.getLogger(__name__)
 
@@ -38,7 +40,9 @@ class PortfolioProcessor:
         return np.dot(self.sim_results, self.weights)
 
 
-    def calculate_risk_metrics(self, portfolio_paths: np.ndarray, confidence_level: float = 0.95):
+    def calculate_risk_metrics(self,
+                               portfolio_paths: np.ndarray,
+                               confidence_level: float = 0.95) -> RiskMetrics:
         """
         Calculates VaR, CVaR, and Maximum Drawdown across all simulations.
         """
@@ -58,14 +62,14 @@ class PortfolioProcessor:
         drawdowns = (portfolio_paths - peak) / peak
         max_drawdown = np.min(drawdowns)
 
-        metrics = {
-            "expected_return": np.mean(final_returns),
-            "median_return": np.median(final_returns),
-            "var_95": var,
-            "cvar_95": cvar,
-            "max_drawdown": max_drawdown,
-            "volatility": np.std(final_returns)
-        }
+        metrics = RiskMetrics(
+            expected_return=float(np.mean(final_returns)),
+            median_return=float(np.median(final_returns)),
+            var_95=float(var),
+            cvar_95=float(cvar),
+            max_drawdown=max_drawdown,
+            volatility=float(np.std(final_returns))
+        )
 
         logger.info(f"Risk metrics calculated: VaR={var:.2%}, MaxDD={max_drawdown:.2%}")
         return metrics

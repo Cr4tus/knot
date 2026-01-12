@@ -12,13 +12,14 @@ def fetch_portfolio_data(
         tickers: list[str],
         benchmarks: list[str],
         start_date: str,
-        end_date: str
+        end_date: str,
+        date_format: str
 ) -> pd.DataFrame:
     """
     Fetches closing prices for a list of tickers and multiple benchmarks.
     """
 
-    validate_date_interval(start_date, end_date, date_format="%Y-%m-%d")
+    validate_date_interval(start_date, end_date, date_format)
 
     all_symbols = tickers + benchmarks
     logger.info(f"Initiating data download for Stocks: {tickers} | Benchmarks: {benchmarks}")
