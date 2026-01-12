@@ -69,12 +69,16 @@ The system is entirely data-driven. Key sections include:
     
 ### 1. Geometric Brownian Motion (GBM)
 The foundational model for asset prices, assuming a constant drift and volatility. It follows the SDE:
-$$dS_t=μS_tdt+σS_tdW_t$$
+```math
+dS_t=μS_tdt+σS_tdW_t
+```
 Where $W_t$ is a standard Wiener process.
 
 ### 2. Merton Jump Diffusion
 Extends GBM by adding a Poisson process to account for *"black swan"* events or sudden market shocks.
-$$dS_t=(μ−λκ)S_tdt+σS_tdW_t+(Y−1)S_tdN_t$$
+```math
+dS_t=(μ−λκ)S_tdt+σS_tdW_t+(Y−1)S_tdN_t
+```
 - λ: Frequency of jumps.
 - $dN_t$: Poisson process.
 - $Y−1$: Random jump size (log-normally distributed).
