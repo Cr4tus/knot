@@ -1,0 +1,23 @@
+[project]
+name = "portfolio-monte-carlo"
+version = "0.1.0"
+description = "A Monte Carlo simulation tool to compare custom stock portfolios against the S&P 500."
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = [
+    "numpy",
+    "pyyaml",
+    "pandas",
+    "yfinance",
+    "matplotlib",
+    "python-box",
+    "seaborn",
+    "fpdf2"
+]
+
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project.scripts]
+simulate = "simulator.main:main"

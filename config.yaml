@@ -1,0 +1,25 @@
+portfolio:
+  stocks: ["AAPL", "MSFT", "TSLA", "NVDA", "RTX"]
+  weights: [0.3, 0.3, 0.2, 0.1, 0.1]
+  benchmarks: ["^GSPC", "^IXIC"]  # S&P 500 and Nasdaq
+
+dates:
+  format: "%Y-%m-%d"
+  start: "2025-01-01"
+  end: "2026-01-01"
+
+simulation:
+  type: "monte_carlo"  # Options: monte_carlo, bootstrap, jump_diffusion
+  n_simulations: 1000
+  days_ahead: 252
+  jump_lambda: 0.1
+  jump_mu: -0.05
+  jump_sigma: 0.1
+
+logging:
+  level: "INFO"
+  format: "%(asctime)s | %(levelname)s | %(module)s:%(lineno)d | %(message)s"
+
+output:
+  export_dir: "exports"
+  report_name: "portfolio_risk_report.pdf"

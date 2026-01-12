@@ -1,0 +1,35 @@
+# --- Python Standards ---
+__pycache__/
+*.py[cod]
+*$py.class
+.ipynb_checkpoints
+.pytest_cache/
+
+# --- Environments ---
+.venv/
+venv/
+ENV/
+env/
+build/
+dist/
+*.egg-info/
+
+# --- IDEs and Editors ---
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# --- Data & Outputs (Project Specific) ---
+# Ignore any dynamically generated reports or plots
+*.png
+*.pdf
+*.csv
+exports/
+
+# --- OS Specific ---
+.DS_Store
+Thumbs.db
+
+# -- Others ---
+!config.yaml
