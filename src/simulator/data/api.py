@@ -2,27 +2,26 @@ import logging
 import pandas as pd
 import yfinance as yf
 
-from simulator.utils import validate_date_interval
+from simulator.utils.functions import validate_date_interval
 
 
 logger = logging.getLogger(__name__)
 
 
 def fetch_portfolio_data(
-        tickers: list[str],
-        benchmarks: list[str],
+        tickers: set[str],
+        benchmarks: set[str],
         start_date: str,
         end_date: str,
-        date_format: str
+        dates_format: str
 ) -> pd.DataFrame:
     """
     Fetches closing prices for a list of tickers and multiple benchmarks.
     """
 
-    validate_date_interval(start_date, end_date, date_format)
+    validate_date_interval(start_date, end_date, dates_format)
 
-    all_symbols = tickers + benchmarks
-    logger.info(f"Initiating data download for Stocks: {tickers} | Benchmarks: {benchmarks}")
+    all_symbols = tickers | benchmarks
 
     try:
         data = yf.download(all_symbols, start=start_date, end=end_date, progress=False)

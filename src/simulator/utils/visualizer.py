@@ -1,9 +1,11 @@
-import matplotlib.pyplot as plt
-import seaborn as sns
-import pandas as pd
 import numpy as np
-from pathlib import Path
+import pandas as pd
+import seaborn as sns
+import matplotlib.pyplot as plt
+
 from box import Box
+from typing import Any
+from pathlib import Path
 
 
 class Visualizer:
@@ -139,45 +141,69 @@ class Visualizer:
         return path
     
 
-    def plot_stress_test(self, portfolio_results: dict, benchmark_results: dict):
-        if not portfolio_results: return
+    def plot_stress_tests(self, portfolio_results: dict, benchmark_results: dict):
+        if not portfolio_results: 
+            return None
         
-        plt.figure(figsize=(12, 8))
-        
+        # 1. Prepare Data for Plotting
         scenarios = list(portfolio_results.keys())
-        scenario = scenarios[0] # Focus on the COVID scenario
+        benchmarks = list(benchmark_results[scenarios[0]].keys())
         
-        # Prepare labels and values
-        names = ["Portfolio"] + list(benchmark_results[scenario].keys())
-        values = [portfolio_results[scenario] * 100] + [v * 100 for v in benchmark_results[scenario].values()]
+        plot_data = []
+        for scenario in scenarios:
+            plot_data.append({
+                "Scenario": scenario,
+                "Asset": "Portfolio",
+                "Return": portfolio_results[scenario] * 100
+            })
+            for b_name, b_value in benchmark_results[scenario].items():
+                plot_data.append({
+                    "Scenario": scenario,
+                    "Asset": b_name,
+                    "Return": b_value * 100
+                })
         
-        # Professional color palette
-        colors = ['#ff4d4d'] + sns.color_palette("Greys_r", len(names)-1)
+        df = pd.DataFrame(plot_data)
+
+        # 2. Setup Plot
+        plt.figure(figsize=(14, 8))
+        sns.set_style("whitegrid")
         
-        bars = plt.barh(names, values, color=colors)
-        
-        # NEW: Center labels inside the bars
-        for bar in bars:
-            width = bar.get_width()
-            # We place the text at width / 2 to center it horizontally
-            plt.text(
-                width / 2, 
-                bar.get_y() + bar.get_height() / 2, 
-                f'{width:.1f}%', 
-                va='center', 
-                ha='center', # Center alignment
-                color='black', 
+        palette: dict[str, Any] = {"Portfolio": "#ff4d4d"}
+        other_colors = sns.color_palette("Greys_r", len(benchmarks))
+        for i, b_name in enumerate(benchmarks):
+            palette[b_name] = other_colors[i]
+
+        # 3. Create Grouped Bar Chart
+        ax = sns.barplot(
+            data=df, 
+            x="Scenario", 
+            y="Return", 
+            hue="Asset", 
+            palette=palette,
+            edgecolor='black'
+        )
+
+        # 4. FIXED: Use ax.containers to add labels
+        # This replaces the ax.patches loop which was causing your error
+        for container in ax.containers:
+            ax.bar_label(
+                container,  # type: ignore
+                fmt='%.1f%%', 
+                padding=3, 
                 fontweight='bold',
                 fontsize=10
             )
+
+        # 5. Styling
+        plt.axhline(0, color='black', linewidth=1.5, alpha=0.7)
+        plt.title("Historical Stress Test Analysis: Portfolio vs Benchmarks", fontsize=16, fontweight='bold', pad=20)
+        plt.ylabel("Cumulative Return (%)", fontsize=12)
+        plt.xlabel("Crisis Scenario", fontsize=12)
         
-        plt.axvline(0, color='white', linewidth=1)
-        plt.title(f"Crisis Impact Comparison: {scenario}")
-        plt.xlabel("Total Percentage Return (%)")
-        
-        # Clean up the look
-        plt.gca().invert_yaxis() # Portfolio at the top
-        plt.grid(axis='x', linestyle='--', alpha=0.3)
+        # Adjust legend and layout
+        plt.legend(title="Asset Allocation", frameon=True, bbox_to_anchor=(1.05, 1), loc='upper left')
+        plt.tight_layout()
         
         path = self.directory / self.cfg.filenames.stress_test
         plt.savefig(path, dpi=300, bbox_inches='tight')

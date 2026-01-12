@@ -1,6 +1,6 @@
 from pydantic import BaseModel, FilePath
 
-from simulator.data.risk_metrics import RiskMetrics
+from simulator.data.model.risk_metrics import RiskMetrics
 
 
 class SimulationEngineResult(BaseModel):

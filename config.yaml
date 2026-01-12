@@ -1,28 +1,48 @@
-portfolio:
-  stocks: ["AAPL", "MSFT", "TSLA", "NVDA"]
-  weights: [0.3, 0.3, 0.2, 0.1]
-  benchmarks: ["^GSPC", "^IXIC"]  # S&P 500 & Nasdaq
+project:
+  logging:
+    level: "INFO"
+    format: "%(asctime)s | %(levelname)s | %(module)s:%(lineno)d | %(message)s"
+  
+  dates_format: "%Y-%m-%d"
 
-dates:
-  format: "%Y-%m-%d"
-  extended: "2019-01-01"  # For stress testing along COVID crisis
-  start: "2025-01-01"
-  end: "2026-01-01"
+portfolio:
+  stocks:
+    - "AAPL"
+    - "MSFT"
+    - "TSLA"
+    - "NVDA"
+  weights:
+    - 0.3
+    - 0.3
+    - 0.2
+    - 0.2
+  benchmarks:
+    - "^GSPC"  # S&P 500 
+    - "^IXIC"  # Nasdaq
 
 simulation:
-  active:  # We can run multiple simulations
-    - "monte_carlo"
-    - "geometric_brownian"
-    # - "jump_diffusion"
   n_simulations: 1000
   days_ahead: 252
-  jump_lambda: 0.1
-  jump_mu: -0.05
-  jump_sigma: 0.1
+  jump:
+    lambda: 0.1
+    sigma: 0.1
+    mu: -0.05
+  calibration_window:
+    start: "2025-01-01"
+    end: "2026-01-01"
+  active_engines:
+    - "monte_carlo"
+    - "geometric_brownian"
+    - "jump_diffusion"
 
-logging:
-  level: "INFO"
-  format: "%(asctime)s | %(levelname)s | %(module)s:%(lineno)d | %(message)s"
+stress_tests:
+  scenarios:
+    - name: "2020 COVID Crisis"
+      start: "2020-02-19"
+      end: "2020-03-23"
+    - name: "2020 COVID Crisis 2"
+      start: "2021-02-19"
+      end: "2022-03-23"
 
 output:
   directory: "exports"
@@ -32,7 +52,7 @@ output:
       portfolio_vs_benchmark: "portfolio_vs_benchmark.png"
       return_distribution: "return_distribution.png"
       simulation_paths: "simulation_paths.png"
-      stress_test: "stress_test.png"
+      stress_test: "stress_tests.png"
   report:
-    generate: true  # or false
+    generate: true  # true or false
     filename: "portfolio_risk_report.pdf"

@@ -1,8 +1,10 @@
-import pandas as pd
-import numpy as np
 import logging
+import numpy as np
 
-from simulator.data.risk_metrics import RiskMetrics
+from box import Box
+
+from simulator.data.api import fetch_portfolio_data
+from simulator.data.model.risk_metrics import RiskMetrics
 
 
 logger = logging.getLogger(__name__)
@@ -76,45 +78,49 @@ class PortfolioProcessor:
 
 
 class StressTester:
-    def __init__(self, data: pd.DataFrame, weights: list, tickers: list):
-        self.data = data
-        self.weights = np.array(weights)
-        self.tickers = tickers
-        self.scenarios = {
-            "2020 COVID Crash": ("2020-02-19", "2020-03-23")
-        }
+    def __init__(self, config: Box, dates_format: str):
+        self.config = config
+        self.date_format = dates_format
 
-    def run_stress_tests(self, benchmark_tickers: list) -> tuple[dict, dict]:
-        """
-        Runs scenarios for the portfolio and all provided benchmarks.
-        """
-        logger.info(f"Running Stress Tests against benchmarks: {benchmark_tickers}")
+    def run_stress_tests(self, weights: list[float], tickers: set[str],
+                        benchmark_tickers: set[str]) -> tuple[dict, dict]:
         portfolio_results = {}
-        benchmark_results = {} # Structure: {scenario_name: {ticker: value}}
-
-        returns = self.data.pct_change()
-
-        for name, (start, end) in self.scenarios.items():
+        benchmark_results = {}
+        for scenario in self.config.scenarios:
             try:
-                period_returns = returns.loc[start:end]
-                if period_returns.empty: continue
+                # 1. Data fetching
+                data = fetch_portfolio_data(
+                    tickers=tickers,
+                    benchmarks=benchmark_tickers,
+                    start_date=scenario.start,
+                    end_date=scenario.end,
+                    dates_format=self.date_format
+                )
+                returns = data.pct_change().dropna()
+                if returns.empty:
+                    continue
 
-                # 1. Portfolio Performance (with dynamic re-weighting)
-                valid_tickers = [t for t in self.tickers if t in period_returns.columns]
-                orig_w = np.array([self.weights[self.tickers.index(t)] for t in valid_tickers])
+                # 2. Portfolio Performance
+                # (with dynamic re-weighting/re-normalizing)
+                weight_map = dict(zip(tickers, weights))
+                valid_tickers = [t for t in tickers if t in returns.columns]
+                orig_w = np.array([weight_map[t] for t in valid_tickers])
                 new_w = orig_w / orig_w.sum()
                 
-                port_perf = (period_returns[valid_tickers] * new_w).sum(axis=1)
-                portfolio_results[name] = (1 + port_perf).cumprod().iloc[-1] - 1
+                portfolio_performance = (returns[valid_tickers] * new_w).sum(axis=1)
+                portfolio_results[scenario.name] = (1 + portfolio_performance).cumprod().iloc[-1] - 1
                 
-                # 2. Benchmarks' Performance
-                benchmark_results[name] = {}
+                # 3. Benchmarks' Performance
+                benchmark_results[scenario.name] = {}
                 for b_ticker in benchmark_tickers:
-                    if b_ticker in period_returns.columns:
-                        b_perf = period_returns[b_ticker]
-                        benchmark_results[name][b_ticker] = (1 + b_perf).cumprod().iloc[-1] - 1
+                    if b_ticker in returns.columns:
+                        b_perf = returns[b_ticker]
+                        benchmark_results[scenario.name][b_ticker] = (1 + b_perf).cumprod().iloc[-1] - 1
 
             except Exception as e:
-                logger.error(f"Error in {name}: {e}")
+                logger.error(
+                    f"Error occurred while running "
+                    f"{scenario.name} stress scenario: {e}"
+                )
 
         return portfolio_results, benchmark_results

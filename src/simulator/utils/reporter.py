@@ -2,7 +2,7 @@ import datetime
 
 from fpdf import FPDF
 
-from simulator.data.simulation_engine_result import SimulationEngineResult
+from simulator.data.model.simulation_engine_result import SimulationEngineResult
 
 
 class RiskReporter(FPDF):
@@ -37,7 +37,7 @@ class RiskReporter(FPDF):
         self.cell(0, 10, f"Generated on: {datetime.date.today().strftime('%B %d, %Y')}", 0, 1, 'C')
 
 
-    def add_introduction(self, extended_start_date: str, start_date: str, end_date: str):
+    def add_introduction(self, start_date: str, end_date: str):
         self.add_page()
         self.set_font('helvetica', 'B', 16)
         self.cell(0, 10, "1. Executive Summary & Methodology", align='C')
@@ -47,8 +47,7 @@ class RiskReporter(FPDF):
             "This report provides a comprehensive stress test and probabilistic simulation of the target portfolio. "
             "We employ a 'Multi-Engine' approach, comparing three distinct stochastic models to capture different "
             "market regimes: standard Monte Carlo, Geometric Brownian Motion (GBM), and Merton Jump Diffusion. "
-            f"\n\nHistorical data calibration period: {extended_start_date} to {end_date}."
-            f"\nSimulation period: {start_date} to {end_date}."
+            f"\n\nHistorical data calibration period: {start_date} to {end_date}."
         )
         self.multi_cell(0, 7, intro_text)
 
@@ -64,7 +63,7 @@ class RiskReporter(FPDF):
                                    engine_to_results_map: dict[str, SimulationEngineResult]):
         self.add_page()
         self.set_font('helvetica', 'B', 16)
-        self.cell(0, 10, "2. Multi-Engine Simulation Analysis", 0, 1, 'L')
+        self.cell(0, 10, "2. Portfolio Analysis", 0, 1, 'C')
         
         # Correlation Heatmap
         self.set_font('helvetica', 'B', 12)
@@ -73,7 +72,8 @@ class RiskReporter(FPDF):
         self.ln(5)
         
         # Comparison Table
-        self.set_y(self.get_y() + 10)
+        self.cell(0, 10, "Simulations Comparison", 0, 1, 'L')
+        self.set_y(self.get_y() + 5)
         self.set_font('helvetica', 'B', 11)
         self.cell(40, 10, "Engine", 1)
         self.cell(50, 10, "Exp. Return (%)", 1)
@@ -94,23 +94,23 @@ class RiskReporter(FPDF):
         for engine, data in engine_to_results_map.items():
             self.add_page()
             self.set_font('helvetica', 'B', 14)
-            self.cell(0, 10, f"Model Detail: {engine.replace('_', ' ').title()}", 0, 1, 'L')
+            self.cell(0, 10, f"{engine.replace('_', ' ').title()} Simulation", 0, 1, align='C')
             self.image(str(data.simulation_visual_filepath), x=10, w=180)
             self.ln(5)
             self.image(str(data.return_distribution_visual_filepath), x=10, w=180)
 
 
-    def add_portfolio_vs_benchmarks_and_stress_test_visuals(self,
+    def add_portfolio_vs_benchmarks_and_stress_tests_visuals(self,
                                                             portfolio_vs_benchmarks_visual_filepath: str,
                                                             stress_test_visual_filepath: str):
         self.add_page()
         self.set_font('helvetica', 'B', 16)
-        self.cell(0, 10, "3. Historical Stress Testing & Benchmarking", 0, 1, 'L')
+        self.cell(0, 10, "3. Historical Benchmarking & Stress Testing", 0, 1, 'C')
         
         self.set_font('helvetica', 'B', 12)
         self.cell(0, 10, "Performance vs. Benchmarks", 0, 1, 'L')
         self.image(portfolio_vs_benchmarks_visual_filepath, x=10, w=180)
         
         self.ln(10)
-        self.cell(0, 10, "Crisis Scenario: 2020 COVID Crash", 0, 1, 'L')
+        self.cell(0, 10, "Crisis Scenarios:", 0, 1, 'L')
         self.image(stress_test_visual_filepath, x=10, w=180)
