@@ -12,8 +12,8 @@ A quantitative tool for simulating portfolio trajectories, performing historical
 #### 1. Clone the repository:
 
 ```bash
-git clone https://github.com/yourusername/portfolio-risk-simulator.git
-cd portfolio-risk-simulator
+git clone https://github.com/Cr4tus/knot.git
+cd knot
 ```
 
 #### 2. Create and activate a virtual environment:
